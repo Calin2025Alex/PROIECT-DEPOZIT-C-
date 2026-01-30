@@ -40,13 +40,14 @@ void logAction(const std::string& msg) {
 // ===================== EXCEPTII =====================
 class FileException : public std::runtime_error {
 public:
-    explicit FileException(const std::string& msg) : std::runtime_error(msg) {}
+    using std::runtime_error::runtime_error; // moștenește constructorii lui runtime_error
 };
 
 class DataException : public std::runtime_error {
 public:
-    explicit DataException(const std::string& msg) : std::runtime_error(msg) {}
+    using std::runtime_error::runtime_error;
 };
+
 
 // ===================== MATERIAL =====================
 class Material {
@@ -87,7 +88,8 @@ public:
 
 
     static Material deserialize(std::istream& is) {
-        int32_t id, qty;
+        int32_t id;
+        int32_t qty;
         double price;
         uint32_t len;
 
