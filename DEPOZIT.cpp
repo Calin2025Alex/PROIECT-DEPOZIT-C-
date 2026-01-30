@@ -74,14 +74,17 @@ public:
 
     // --- SERIALIZARE BINARA ---
     void serialize(std::ostream& os) const {
-        uint32_t len = denumire.size();
-        os.write((char*)&id, sizeof(id));
-        os.write((char*)&len, sizeof(len));
-        os.write(denumire.c_str(), len);
-        os.write((char*)&cantitate, sizeof(cantitate));
-        os.write((char*)&pret, sizeof(pret));
-        if (!os) throw FileException("Eroare la scriere fisier");
-    }
+    uint32_t len = static_cast<uint32_t>(denumire.size());
+
+    os.write(reinterpret_cast<const char*>(&id), sizeof(id));
+    os.write(reinterpret_cast<const char*>(&len), sizeof(len));
+    os.write(denumire.data(), len);
+    os.write(reinterpret_cast<const char*>(&cantitate), sizeof(cantitate));
+    os.write(reinterpret_cast<const char*>(&pret), sizeof(pret));
+
+    if (!os) throw FileException("Eroare la scriere fisier");
+}
+
 
     static Material deserialize(std::istream& is) {
         int32_t id, qty;
