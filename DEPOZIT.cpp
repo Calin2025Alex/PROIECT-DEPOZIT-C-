@@ -13,6 +13,7 @@
 #include <sstream>
 #include <cctype>
 #include <ctime>
+#include <chrono>
 
 
 // ===================== TIME / LOG UTILS =====================
@@ -75,7 +76,7 @@ public:
 
     // --- SERIALIZARE BINARA ---
     void serialize(std::ostream& os) const {
-    uint32_t len = static_cast<uint32_t>(denumire.size());
+    auto len = static_cast<uint32_t>(denumire.size());
 
     os.write(reinterpret_cast<const char*>(&id), sizeof(id));
     os.write(reinterpret_cast<const char*>(&len), sizeof(len));
@@ -352,7 +353,8 @@ void importCSV(const std::string& inFile, bool replace = false) {
         std::stringstream ss(line);
         std::string field;
 
-        int id, cant;
+        int id;
+        int cant;
         double pret;
         std::string nume;
 
