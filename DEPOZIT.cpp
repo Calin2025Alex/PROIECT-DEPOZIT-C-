@@ -13,7 +13,7 @@
 #include <sstream>
 #include <cctype>
 #include <ctime>
-#include <chrono>
+
 
 
 // ===================== TIME / LOG UTILS =====================
@@ -148,7 +148,7 @@ public:
         if (exists(m.getId()))
             throw DataException("ID deja existent");
 
-        saveState(); // 👈 FOARTE IMPORTANT
+        saveState(); // FOARTE IMPORTANT
         items.push_back(m);
 
         logAction("ADD ID=" + std::to_string(m.getId()) +
@@ -521,6 +521,149 @@ void showMenu() {
 }
 
 
+
+
+
+
+
+void handleDisplayInventory(Depozit& d) {
+    printPaged(d.all());
+}
+
+void handleLowStock(Depozit& d) {
+    printPaged(d.lowStock(4));
+}
+
+void handleOutOfStock(Depozit& d) {
+    printPaged(d.outOfStock());
+}
+
+void handleExpensive(Depozit& d) {
+    printPaged(d.expensive(10000));
+}
+
+void handleAddMaterial(Depozit& d) {
+    int id = readInt("ID: ");
+    std::cin.ignore();
+    std::string nume;
+    std::cout << "Denumire: ";
+    std::getline(std::cin, nume);
+    int cant = readInt("Cantitate: ");
+    double pret;
+    std::cout << "Pret unitar: ";
+    std::cin >> pret;
+
+    d.add({id, nume, cant, pret});
+    std::cout << "Material adaugat cu succes!\n";
+}
+
+void handleUpdateQty(Depozit& d) {
+    d.updateQty(
+        readInt("ID material: "),
+        readInt("Noua cantitate: ")
+    );
+    std::cout << "Cantitate modificata.\n";
+}
+
+void handleRemoveMaterial(Depozit& d) {
+    d.remove(readInt("ID material: "));
+    std::cout << "Material sters.\n";
+}
+
+void handleSearch(Depozit& d) {
+    std::cin.ignore();
+    std::string q;
+    std::cout << "Text cautat: ";
+    std::getline(std::cin, q);
+    printPaged(d.search(q));
+}
+
+void handleSortPrice(Depozit& d, bool asc) {
+    printPaged(d.sortByPrice(asc));
+}
+
+void handleSortQuantity(Depozit& d, bool asc) {
+    printPaged(d.sortByQuantity(asc));
+}
+
+void handleExportCSV(Depozit& d) {
+    d.exportCSV("inventar.csv");
+    std::cout << "Export CSV realizat: inventar.csv\n";
+}
+
+void handleExportTXT(Depozit& d) {
+    d.exportTXT("inventar.txt");
+    std::cout << "Export TXT realizat: inventar.txt\n";
+}
+
+void handleImportCSV(Depozit& d) {
+    std::cin.ignore();
+    std::string file;
+    std::cout << "Fisier CSV: ";
+    std::getline(std::cin, file);
+
+    std::cout << "Inlocuieste datele existente? (1=DA, 0=NU): ";
+    int r;
+    std::cin >> r;
+
+    d.importCSV(file, r == 1);
+    std::cout << "Import CSV realizat cu succes.\n";
+}
+
+void handleUndo(Depozit& d) {
+    if (d.undo())
+        std::cout << "Undo realizat.\n";
+    else
+        std::cout << "Nu exista undo.\n";
+}
+
+void handleRedo(Depozit& d) {
+    if (d.redo())
+        std::cout << "Redo realizat.\n";
+    else
+        std::cout << "Nu exista redo.\n";
+}
+
+bool handleOption(int opt, Depozit& d) {
+    switch (opt) {
+        case 1: handleDisplayInventory(d); break;
+        case 2: handleLowStock(d); break;
+        case 3: handleOutOfStock(d); break;
+        case 4: handleExpensive(d); break;
+        case 5: handleAddMaterial(d); break;
+        case 7: handleUpdateQty(d); break;
+        case 8: handleRemoveMaterial(d); break;
+        case 9: handleSearch(d); break;
+        case 10: handleSortPrice(d, true); break;
+        case 11: handleSortPrice(d, false); break;
+        case 12: handleSortQuantity(d, true); break;
+        case 13: handleSortQuantity(d, false); break;
+        case 14: handleExportCSV(d); break;
+        case 15: handleExportTXT(d); break;
+        case 16: handleImportCSV(d); break;
+        case 17: handleUndo(d); break;
+        case 18: handleRedo(d); break;
+        case 6:
+            d.save();
+            std::cout << "Date salvate.\n";
+            return false; // exit
+        case 0:
+            std::cout << "Iesire fara salvare.\n";
+            return false; // exit
+        default:
+            std::cout << "Optiune invalida!\n";
+    }
+    return true; // continue
+}
+
+
+
+
+
+
+
+
+
 // ===================== MAIN =====================
 int main() {
     Depozit d("depozit.dat");
@@ -528,8 +671,7 @@ int main() {
 
     try {
         d.load();
-        if (d.all().empty())
-            d.demo();
+        if (d.all().empty()) d.demo();
     } catch (const std::exception& e) {
         std::cout << "Eroare la incarcare: " << e.what() << "\n";
         logAction(std::string("ERROR: ") + e.what());
@@ -537,144 +679,16 @@ int main() {
     }
 
     bool ruleaza = true;
-    while (ruleaza) { 
-    showMenu();
-
-    int opt;
-    std::cin >> opt;
-
-    try {
-        switch (opt) {
-
-        case 1: // Afisare completa
-            printPaged(d.all());
-            break;
-
-        case 2: // Cantitate <= 4
-            printPaged(d.lowStock(4));
-            break;
-
-        case 3: // Epuizate
-            printPaged(d.outOfStock());
-            break;
-
-        case 4: // Scumpe
-            printPaged(d.expensive(10000));
-            break;
-
-        case 5: { // Adauga
-            int id = readInt("ID: ");
-            std::cin.ignore();
-            std::string nume;
-            std::cout << "Denumire: ";
-            std::getline(std::cin, nume);
-            int cant = readInt("Cantitate: ");
-            double pret;
-            std::cout << "Pret unitar: ";
-            std::cin >> pret;
-
-            d.add({id, nume, cant, pret});
-            std::cout << "Material adaugat cu succes!\n";
-            break;
+    while (ruleaza) {
+        showMenu();
+        int opt = readInt("Alege optiunea: ");
+        try {
+            ruleaza = handleOption(opt, d);
+        } catch (const std::exception& e) {
+            std::cout << "Eroare: " << e.what() << "\n";
         }
-
-        case 7: // Modifica cantitate
-            d.updateQty(
-                readInt("ID material: "),
-                readInt("Noua cantitate: ")
-            );
-            std::cout << "Cantitate modificata.\n";
-            break;
-
-        case 8: // Stergere
-            d.remove(readInt("ID material: "));
-            std::cout << "Material sters.\n";
-            break;
-
-        case 9: { // Cautare
-            std::cin.ignore();
-            std::string q;
-            std::cout << "Text cautat: ";
-            std::getline(std::cin, q);
-            printPaged(d.search(q));
-            break;
-        }
-
-        case 10: // Sortare pret crescator
-            printPaged(d.sortByPrice(true));
-            break;
-
-        case 11: // Sortare pret descrescator
-            printPaged(d.sortByPrice(false));
-            break;
-
-        case 12: // Sortare cantitate crescator
-            printPaged(d.sortByQuantity(true));
-            break;
-
-        case 13: // Sortare cantitate descrescator
-            printPaged(d.sortByQuantity(false));
-            break;
-
-        case 14: // Export CSV
-            d.exportCSV("inventar.csv");
-            std::cout << "Export CSV realizat: inventar.csv\n";
-            break;
-
-        case 15: // Export TXT
-            d.exportTXT("inventar.txt");
-            std::cout << "Export TXT realizat: inventar.txt\n";
-            break;
-
-        case 16: { // Import CSV
-            std::cin.ignore();
-            std::string file;
-            std::cout << "Fisier CSV: ";
-            std::getline(std::cin, file);
-
-            std::cout << "Inlocuieste datele existente? (1=DA, 0=NU): ";
-            int r;
-            std::cin >> r;
-
-            d.importCSV(file, r == 1);
-            std::cout << "Import CSV realizat cu succes.\n";
-            break;
-        }
-
-        case 17:
-            if (d.undo())
-                std::cout << "Undo realizat.\n";
-            else
-                std::cout << "Nu exista undo.\n";
-            break;
-
-        case 18:
-            if (d.redo())
-                std::cout << "Redo realizat.\n";
-            else
-                std::cout << "Nu exista redo.\n";
-            break;
-
-
-        case 6: // Salvare si iesire
-            d.save();
-            std::cout << "Date salvate.\n";
-            ruleaza = false;
-            break;
-
-        case 0: // Iesire fara salvare
-            std::cout << "Iesire fara salvare.\n";
-            ruleaza = false;
-            break;
-
-        default:
-            std::cout << "Optiune invalida!\n";
-        }
-
-    } catch (const std::exception& e) {
-        std::cout << "Eroare: " << e.what() << "\n";
     }
-}
-logAction("PROGRAM STOP");
+
+    logAction("PROGRAM STOP");
     return 0;
 }
